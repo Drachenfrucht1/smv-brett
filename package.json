@@ -1,0 +1,23 @@
+{
+  "name": "smv-brett",
+  "version": "1.0.0",
+  "description": "Das digitale smv-brett",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run compile && electron .",
+    "crypto": "node crypto.js",
+    "debug": "npm run compile && electron . --inspect",
+    "compile": "tsc index.ts crypto.ts",
+    "test": "node test.js"
+  },
+  "author": "Dominik Sucker",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^1.8.3",
+    "express": "^4.16.2",
+    "webdav": "^1.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.1"
+  }
+}
