@@ -1,5 +1,6 @@
 //IMPORTS
-const { app, BrowserWindow, ipcMain } = require("electron");
+const electron = require("electron");
+const { app, BrowserWindow, ipcMain } = electron;
 const path = require("path");
 const url = require("url");
 const fs = require("fs");
@@ -40,7 +41,8 @@ app.on("ready", createWindow);
  * PURPOSE: creates a new window for the smv-brett
  */
 function createWindow() {
-    win = new BrowserWindow({width: config.widht, height: config.height/*, frame: false*/});
+    const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
+    win = new BrowserWindow({width: config.widht, height: config.height, frame: false, fullscreen: true});
 
     win.loadURL(url.format({
         pathname: path.join(__dirname, "/public/index.html"),
