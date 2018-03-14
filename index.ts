@@ -4,6 +4,7 @@ const { app, BrowserWindow, ipcMain } = electron;
 const path = require("path");
 const url = require("url");
 const fs = require("fs");
+const os = require("os");
 var createClient = require("webdav");
 
 var enigma = require("./crypto.js");
@@ -64,7 +65,7 @@ function createWindow() {
 function checkFiles(): void {
     //get list with all remote files
     client.getDirectoryContents("/smv-brett").then(contents => {
-        if (contents.length <= 1) {
+        if (contents.length < 0) {
             console.log("No file in smv-brett directory");
         } else {
             //check if file is localy but not remotely
@@ -103,9 +104,6 @@ function checkForDelete(contents: Array<file>): void {
         }
     }
     let b;
-    while(finished < removing) {
-        b = 1; //do something while waiting (otherwise the while loop will get skiped)
-    }
     files = files_2;
 }
 
@@ -116,7 +114,7 @@ function checkForDelete(contents: Array<file>): void {
  * @param contents list with all remote files
  */
 function downloadMissingFiles(contents: Array<file>): void {
-    for (let i = 1; i < contents.length; i++) {
+    for (let i = 0; i < contents.length; i++) {
         if (!fileExists(contents[i].filename)) {
             console.log("Downloading " + contents[i].basename);
             downloadFile(contents[i]);
@@ -167,13 +165,15 @@ function fileEdited(file: file): boolean {
  */
 function downloadFile(file): void {
     try {
-        client.getFileContents("/smv-brett/" + file.basename).then(data => {
-            fs.writeFileSync("./files/" + file.basename, data);
-            deleteFromArray(files,file);
-            files.push(file);
+        if(file.type == "file") {
+            client.getFileContents("/smv-brett/" + file.basename).then(data => {
+                fs.writeFileSync("./files/" + file.basename, data);
+                deleteFromArray(files,file);
+                files.push(file);
 
-            console.log("Finished download");
-        });
+                console.log("Finished download");
+            });
+        }
     } catch (err) {
         throw err;
     }
