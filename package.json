@@ -1,23 +1,23 @@
 {
   "name": "smv-brett",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Das digitale smv-brett",
   "main": "index.js",
   "scripts": {
-    "start": "npm run compile && electron .",
-    "crypto": "node crypto.js",
-    "debug": "npm run compile && electron . --inspect",
-    "compile": "tsc index.ts crypto.ts && tsc public/index.ts",
+    "start": "npm run compile && node index.js",
+    "crypto": "npm run compile && node crypto.js",
+    "debug": "npm run compile && npm start",
+    "compile": "tsc --p ./tsconfig.json && tsc --p ./tsconfig-public.json",
     "test": "node test.js"
   },
   "author": "Dominik Sucker",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "electron": "^1.8.3",
+    "@types/node": "^10.0.6",
     "express": "^4.16.2",
-    "webdav": "^1.3.0"
-  },
-  "devDependencies": {
-    "nodemon": "^1.17.1"
+    "pdf-image": "^2.0.0",
+    "typescript": "^3.0.3",
+    "webdav": "^1.6.0",
+    "ws": "^6.0.0"
   }
 }

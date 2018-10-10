@@ -1,10 +1,8 @@
 {
-    "url": "https://wolke.qg-moessingen.de/nextcloud/remote.php/webdav/",
+    "url": "https://example.com/webdav/",
     "username": "username",
     "pwH": "passwordHash",
     "key": "pwKey",
-    "width": "1920",
-    "height": "1080",
     "check": "0.5",
     "renew": "0.2"
 }

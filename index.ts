@@ -1,10 +1,10 @@
 //IMPORTS
-const electron = require("electron");
-const { app, BrowserWindow, ipcMain } = electron;
 const path = require("path");
 const url = require("url");
 const fs = require("fs");
 const os = require("os");
+const PDFImage = require("pdf-image").PDFImage;
+const ws = require("./webserver.js");
 var createClient = require("webdav");
 
 var enigma = require("./crypto.js");
@@ -25,38 +25,24 @@ var client = createClient(
 if(!fs.existsSync("./files")) {
     fs.mkdirSync("./files");
 }
+if (!fs.existsSync("./files/temp")) {
+    fs.mkdirSync("./files/temp");
+}
+
+//display copyright notice
+console.log(
+    "\n\n\n\nSMV-Brett - Das digitale Smv-Brett\n"+
+    "Copyright (c) 2018 Dominik Sucker\n" + 
+    "This software is distributed under the MIT License\n\n"
+);
 
 //run the check every 'check' minutes
+checkFiles();
 setInterval(checkFiles, config.check * 1000 * 60);
 
-//open a window when app is ready
-app.on("ready", createWindow);
-/*app.on("windows-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
-    }
-});*/
-
-/**
- * FUNCTION: createWindow()
- * PURPOSE: creates a new window for the smv-brett
- */
-function createWindow() {
-    const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
-    win = new BrowserWindow({width: config.widht, height: config.height, frame: false, fullscreen: true});
-
-    win.loadURL(url.format({
-        pathname: path.join(__dirname, "/public/index.html"),
-        protocol:"file",
-        slashes: true
-    }));
-
-    win.webContents.openDevTools();
-
-    win.on("closed", () => {
-        win = null;
-    });
-}
+//start webserver
+ws.start();
+ws.update(files);
 
 /**
  * FUNCTION: checkFiles()
@@ -69,9 +55,12 @@ function checkFiles(): void {
             console.log("No file in smv-brett directory");
         } else {
             //check if file is localy but not remotely
-            checkForDelete(contents);
+            let b1 = checkForDelete(contents);
             //download missing files
-            downloadMissingFiles(contents);
+            let b2 = downloadMissingFiles(contents);
+
+            if(b1 || b2)
+                ws.update(files);
         }
     });
 }
@@ -82,10 +71,11 @@ function checkFiles(): void {
  * 
  * @param contents list with all remote files
  */
-function checkForDelete(contents: Array<file>): void {
+function checkForDelete(contents: Array<file>): boolean {
     let files_2 = files;
     let finished: number = 0;
     let removing: number = 0;
+    let value: boolean = false;
     //check every local file with every remote file
     for (let i = 0; i < files.length; i++) {
         let exists = false;
@@ -100,11 +90,15 @@ function checkForDelete(contents: Array<file>): void {
             fs.unlinkSync("./files/" + files[i].basename);
             deleteFromArray(files_2, files[i]);
 
+            value = true;
+
             finished++;
         }
     }
     let b;
     files = files_2;
+
+    return value;
 }
 
 /**
@@ -113,17 +107,23 @@ function checkForDelete(contents: Array<file>): void {
  * 
  * @param contents list with all remote files
  */
-function downloadMissingFiles(contents: Array<file>): void {
+function downloadMissingFiles(contents: Array<file>): boolean {
+    let value: boolean = false;
+
     for (let i = 0; i < contents.length; i++) {
         if (!fileExists(contents[i].filename)) {
             console.log("Downloading " + contents[i].basename);
             downloadFile(contents[i]);
+            value = true;
         } else if (fileEdited(contents[i])) {
             console.log("Downloading " + contents[i].basename);
             downloadFile(contents[i]);
+            value = true;
         }
     }
     fs.writeFile("./files.json", JSON.stringify(files));
+
+    return value;
 }
 
 /**
@@ -163,11 +163,33 @@ function fileEdited(file: file): boolean {
  * 
  * @param file file to be downloaded
  */
-function downloadFile(file): void {
+function downloadFile(file: file): void {
     try {
         if(file.type == "file") {
             client.getFileContents("/smv-brett/" + file.basename).then(data => {
-                fs.writeFileSync("./files/" + file.basename, data);
+                if(file.mime == "application/pdf") {
+                    fs.writeFileSync("./files/temp/" + file.basename, data);
+
+                    let split = file.basename.split(".");
+                    file.filenameWoExt = split[0];
+                    if(split.length > 2) {
+                        for(let i = 1; i < split.length - 1; i++) {
+                            if(split[i] == "pdf") {
+                                break;
+                            } else {
+                                file.filenameWoExt + "." + split[i];
+                            }
+                        }
+                    }
+
+                    //convert to png
+                    let img = new PDFImage("./files/temp/" + file.basename);
+                    img.convertPage(0).then(path => {
+                        fs.renameSync("./files/temp/" + file.filenameWoExt + "-0.png", "./files/" + file.filenameWoExt + ".png");
+                    });
+                } else {
+                    fs.writeFileSync("./files/" + file.basename, data);
+                }
                 deleteFromArray(files,file);
                 files.push(file);
 
@@ -186,12 +208,10 @@ function downloadFile(file): void {
  * @returns the new array
  */
 function deleteFromArray(array: Array<file>, a: file): void {
-    console.log(array);
     let index = array.position(a);
     if(index > -1) {
         array.splice(index, 1);
     }
-    console.log(array);
 }
 
 interface Array<T> {
@@ -203,7 +223,7 @@ interface Array<T> {
  * FUNCTION: Array.contains()
  * PURPOSE: hard-coded function to check if a file object is in the array (I know it's not good practise to hard-code such things)
  */
-Array.prototype.contains = function(a): boolean {
+Array.prototype.contains = function(a: file): boolean {
     for(let i = 0; i < this.length; i++) {
         if(this[i].filename == a.filename) {
             return true;
@@ -237,4 +257,6 @@ class file {
     lastmod: string;
     size: number;
     type: string;
+    mime: string;
+    filenameWoExt: string;
 }

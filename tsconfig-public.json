@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs" 
+    },
+    "include": [
+        "./public"
+    ],
+    "exclude": [
+        "./node_modules",
+        "./releases",
+    ]
+}
