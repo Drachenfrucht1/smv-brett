@@ -1,7 +1,4 @@
-index.js
-crypto.js
+*.js
 config.json
-test.js
 node_modules
 files
-releases
