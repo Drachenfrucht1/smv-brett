@@ -2,3 +2,4 @@ files
 node_modules
 pdf.pdf
 *.js
+files.json

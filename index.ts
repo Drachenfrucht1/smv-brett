@@ -8,8 +8,11 @@ const ws = require("./webserver.js");
 var createClient = require("webdav");
 
 var enigma = require("./crypto.js");
-var files: Array<file> = require("./files.json");
+
+var files: Array<file> = fs.existsSync("./files.json") ? require("./files.json") : new Array<file>();
 var config = require("./config.json");
+
+var check = config.check ? config.check : 0.5
 
 //VARIABLES
 let win;
@@ -31,14 +34,14 @@ if (!fs.existsSync("./files/temp")) {
 
 //display copyright notice
 console.log(
-    "\n\n\n\nSMV-Brett - Das digitale Smv-Brett\n"+
-    "Copyright (c) 2018 Dominik Sucker\n" + 
+    "\n\n\n\nSMV-Brett - Das digitale SMV-Brett\n"+
+    "Copyright (c) 2018-2019 Dominik Sucker\n" + 
     "This software is distributed under the MIT License\n\n"
 );
 
 //run the check every 'check' minutes
 checkFiles();
-setInterval(checkFiles, config.check * 1000 * 60);
+setInterval(checkFiles, check * 1000 * 60);
 
 //start webserver
 ws.start();
@@ -55,12 +58,11 @@ function checkFiles(): void {
             console.log("No file in smv-brett directory");
         } else {
             //check if file is localy but not remotely
-            let b1 = checkForDelete(contents);
+            checkForDelete(contents);
             //download missing files
-            let b2 = downloadMissingFiles(contents);
+            downloadMissingFiles(contents);
 
-            if(b1 || b2)
-                ws.update(files);
+            ws.update(files);
         }
     });
 }
@@ -88,6 +90,7 @@ function checkForDelete(contents: Array<file>): boolean {
             removing++;
             //delete file
             fs.unlinkSync("./files/" + files[i].basename);
+            console.log("Removed " + files[i].basename);
             deleteFromArray(files_2, files[i]);
 
             value = true;
@@ -117,11 +120,12 @@ function downloadMissingFiles(contents: Array<file>): boolean {
             value = true;
         } else if (fileEdited(contents[i])) {
             console.log("Downloading " + contents[i].basename);
+            deleteFromArray(files, fileExists(contents[i].filename));
             downloadFile(contents[i]);
             value = true;
         }
     }
-    fs.writeFile("./files.json", JSON.stringify(files));
+    fs.writeFileSync("./files.json", JSON.stringify(files));
 
     return value;
 }
@@ -208,7 +212,7 @@ function downloadFile(file: file): void {
  * @returns the new array
  */
 function deleteFromArray(array: Array<file>, a: file): void {
-    let index = array.position(a);
+    let index = array.indexOf(a);
     if(index > -1) {
         array.splice(index, 1);
     }
@@ -230,22 +234,6 @@ Array.prototype.contains = function(a: file): boolean {
         }
     }
     return false;
-}
-
-/**
- * FUNCTION: Array.position()
- * PURPOSE: hard-coded function to get the position of a file object in the array (I know it's not good practise to hard-code such things)
- */
-Array.prototype.position = function(a: file): number {
-    if(this.contains(a)) {
-        for (let i = 0; i < this.length; i++) {
-            if (this[i].filename == a.filename) {
-                return i;
-            }
-        }
-    } else {
-        return -1;
-    }
 }
 
 /**

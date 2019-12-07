@@ -48,7 +48,7 @@ export function start() {
 
     //file route
     app.get("/files/:file", (req, res) => {
-        fs.readFile("./files/" + req.params.file, (err, data) => {
+        fs.readFile("./files/" + decodeURIComponent(req.params.file), (err, data) => {
             if(err) {
                 res.status(404).end();
                 console.error(err);
@@ -86,12 +86,13 @@ export function update(files: Array<file>) {
     string = "reload ";
     for(let i = 0; i < files.length; i++) {
         if (files[i].mime == "application/pdf") {
-            string += files[i].filenameWoExt + ".png" + " ";
+            string += encodeURIComponent(files[i].filenameWoExt) + ".png" + " ";
         } else {
-            string += files[i].basename + " ";
+            string += encodeURIComponent(files[i].basename) + " ";
         }
     }
     for(let i = 0; i < conns.length; i++) {
-        conns[i].send(string);
+        if(conns[i].readyState == 1)
+            conns[i].send(string);
     }
 }

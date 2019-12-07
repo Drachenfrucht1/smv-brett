@@ -9,7 +9,9 @@ RUN apt-get update && \
 
 RUN npm install
 
+RUN npm run compile
+
 EXPOSE 80
 EXPOSE 443
 
-CMD npm start
+CMD node index.js

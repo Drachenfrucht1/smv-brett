@@ -1,7 +1,6 @@
 //IMPORTS
 import * as crypto from "crypto";
 var string = require("./string.js");
-var config = require("./config.json");
 
 let create: boolean = false; 
 let pw;

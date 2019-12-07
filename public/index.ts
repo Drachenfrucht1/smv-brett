@@ -32,8 +32,6 @@ connection.onmessage = (e) => {
     //split message and add files to array
     if(split[0] == "reload") {
         index = 0;
-        clearTimeout(timer);
-        setInterval(load, 0.2 * 60 * 1000);
 
        files = new Array<String>();
 
